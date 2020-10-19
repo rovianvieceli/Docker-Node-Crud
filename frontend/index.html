@@ -1,0 +1,100 @@
+<html>
+    <head>
+        <meta charset="utf-8"> 
+        <title>Cadastro (Node + RestAPI) com Docker</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    </head>
+</html>
+<body>
+    <div class="container">
+        <h1>Cadastro</h1>
+        <hr>
+        <div>
+            <input type="hidden" name="id">
+            <div class="form-group">
+                <label for="name">Nome</label>
+                <input type="text" class="form-control" name="name" placeholder="Digite o nome">
+            </div>
+            <button class="btn btn-success" saveClient>Salvar</button>
+        </div>
+
+        <table class="table" id="clients">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="clientsRows"></tbody>
+        </table>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+    <script>
+        const API = 'http://localhost:3000'
+
+        const createButton = (label, type) => {
+            return $('<button>').addClass(`btn btn-${type}`).html(label)
+        }
+
+        const updateClient = client => {
+            $('[name=id').val(client._id)
+            $('[name=name').val(client.name)
+        }
+        
+        const removeClient = client => {
+            $.ajax({
+                method: 'DELETE',
+                url: `${API}/clients/${client._id}`,
+                success: getClients
+            })
+        }
+
+        const renderRows = clients => {
+            const rows = clients.map(client => {
+                const updateButton = createButton('Atualizar', 'warning')
+                const removeButton = createButton('Excluir', 'danger')
+
+                updateButton.click(() => updateClient(client))
+                removeButton.click(() => removeClient(client))
+
+                return $('<tr>')
+                    .append($('<td>').append(client.name))
+                    .append($('<td>').append(updateButton).append(removeButton))
+            })
+
+            $('#clientsRows').html(rows)
+        }
+
+        const getClients = () => {
+            $.ajax({
+                url: `${API}/clients`, 
+                success: clients => {
+                    renderRows(clients)
+                    $('[name=name').val('')
+                }
+            })
+        }
+
+        // _id -> para o mongo para agilizar na entidade
+        const saveClients = () => {
+            const _id   = $('[name=id]').val()
+            const name  = $('[name=name]').val()
+
+            $.ajax({
+                method: _id ? 'PUT' : 'POST',
+                url: `${API}/clients/${_id}`, 
+                data: _id ? { _id, name } : { name },
+                success: getClients
+            })
+        }
+
+        $(() => {
+            getClients()
+            $('[saveClient]').click(saveClients)
+        })
+
+    </script>
+
+</body>
